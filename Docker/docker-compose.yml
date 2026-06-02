@@ -1,0 +1,83 @@
+# Docker/docker-compose.yml
+
+services:
+
+  iot_mqtt_broker:
+    image: eclipse-mosquitto:latest
+    container_name: iot_mqtt_broker
+    ports:
+      - "1883:1883"
+    volumes:
+      
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: always
+
+  
+  iot_database:
+    image: postgres:latest
+    container_name: iot_database
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 15s
+      timeout: 15s
+      retries: 15
+    volumes:
+      
+      - db-data:/var/lib/postgresql
+    restart: always
+
+  
+  telegram_bot:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: iot_telegram_bot
+    command: python -m Modules.main
+    environment:
+      - DB_HOST=iot_database
+    depends_on:
+      iot_database:
+        condition: service_healthy
+    restart: always
+
+  streamlit_dashboard:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: iot_dashboard
+    command: streamlit run IoT_Simulation/app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - DB_HOST=iot_database
+    env_file:
+      - ../.env
+    depends_on:
+      iot_database:
+        condition: service_healthy
+    restart: always
+
+  plc_simulator:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: iot_plc_sim
+    command: python Modules/models/plc_simulator.py
+    env_file:
+      - ../.env
+    depends_on:
+      - iot_mqtt_broker
+    restart: always    
+
+volumes:
+  db-data:

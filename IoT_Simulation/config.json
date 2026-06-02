@@ -1,0 +1,31 @@
+{
+  "plcs": [
+    {
+      "id": 1,
+      "sensors": [
+        {"type": "temperature", "unit": "C"},
+        {"type": "humidity", "unit": "%"}
+      ],
+      "gateway_id": 101
+    },
+    {
+      "id": 2,
+      "sensors": [
+        {"type": "Battery", "unit": "%"}
+      ],
+      "gateway_id": 101
+    }
+  ],
+  "gateways": [
+    {
+      "id": 101,
+      "protocol": "MQTT",
+      "server_ip": "192.168.1.1"
+    }
+  ],
+  "servers": [
+    {
+      "ip": "192.168.1.1"
+    }
+  ]
+}
